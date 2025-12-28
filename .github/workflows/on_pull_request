@@ -1,0 +1,45 @@
+name: Resume AI – Pull Request (Beta)
+
+on:
+  pull_request:
+
+jobs:
+  beta-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Deploy Infrastructure
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/cloudformation.yaml \
+            --stack-name resume-ai-stack \
+            --capabilities CAPABILITY_NAMED_IAM
+
+      - name: Generate HTML Resume
+        run: python scripts/generate_html.py
+
+      - name: Analyze Resume
+        run: python scripts/analyze_resume.py
+
+      - name: Deploy to BETA
+        env:
+          RESUME_BUCKET: ${{ secrets.RESUME_BUCKET }}
+          ENVIRONMENT: beta
+        run: python scripts/deploy_helpers.py
