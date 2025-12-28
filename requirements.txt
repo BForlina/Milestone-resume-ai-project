@@ -1,2 +1,3 @@
-pip install openai boto3
-pip freeze > requirements.txt
+openai
+boto3
+
